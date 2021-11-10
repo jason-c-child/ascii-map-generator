@@ -1,6 +1,8 @@
 # - ascii map generator
 
 import random
+import argparse
+import hashlib
 
 # - Lists of rectangles
 shapes0 = {
@@ -50,7 +52,7 @@ presets = {
 }
 
 # Function that creates the basic map, defines stuff like size, legend, positions on left/right side, ect
-def Start(s):
+def generate_basemap(s, preset_arg):
     global MAP
     global stuff
     global PIL
@@ -65,7 +67,7 @@ def Start(s):
     global LS 
     global RS
     global p
-    stuff = ["*", "@", "!", ".", "+", "%", "&", "$", "#"]
+    stuff = ["*", "@", "%", "$", "#"]
     PIL = []
     MAP = {}
     if s == "1":
@@ -90,9 +92,7 @@ def Start(s):
         b = 191
         p = "T"
     else:
-        for i in presets:
-            print(i)
-        cmd = int(input(">"))
+        cmd = int(preset_arg)
         for i in presets:
             if presets[i]["Set"] == cmd:
                 shapes = presets[i]["shapes"]
@@ -121,10 +121,100 @@ def Start(s):
         i += 1
 
 # Functions that name stuff
-def Namer():
-    FP = random.choice(["Str","Tra","Kle","Olc", "Mat", "Wir", "Sle", "Pad", "Lat"])
-    SP = random.choice(["ait","cre","zat","tor", "lin", "dly", "waz", "ken", "mon"])
-    return FP + SP
+def name_map():
+    FP = lambda: random.choice(
+        [
+            "Str",
+            "Tra",
+            "Kle",
+            "Olc", 
+            "Mat", 
+            "Wir", 
+            "Sle", 
+            "Pad", 
+            "Lat", 
+            "Far",
+            "Tel",
+            "Vor",
+            "Elm",
+            "Loi",
+            "Pel",
+            "Kor",
+            "Ble",
+            " Ar",
+            " En",
+            " Ka",
+            " Vo",
+            " Li",
+            " Xe",
+            " Ze",
+            " Zo",
+            " Xi",
+            " La",
+            " Bi",
+            " Er",
+            " Om",
+            " Ra",
+            "Pli",
+            "Ple",
+            "Bli",
+            "Era",
+            "Exa",
+            "Zyl",
+            "Zla",
+            "Zal",
+            "Ran",
+            "Rem",
+            "Rel",
+            "Ral",
+            "Jel",
+            "Jen",
+            "Jor",
+            "Jux",
+            "Hen",
+            "Hor",
+            "Har",
+            "Hir",
+            "Her",
+            "Qua",
+            "Qen",
+            "Qul",
+            "Qil",
+            "Qan",
+            "Qaz"
+        ]
+    )
+
+    SP = lambda: random.choice(
+        [
+            "ait",
+            "cre",
+            "zel",
+            "tor", 
+            "lin", 
+            "   ", 
+            "ar", 
+            "ken", 
+            "mon",
+            "ren",
+            "eld",
+            "   ",
+            "mar",
+            "olo",
+            "vex",
+            "awe",
+            'car',
+            "elg",
+            "gel",
+            'i   ',
+            "a   ",
+            "o   ",
+            "y   ",
+            "    ",
+        ]
+    )
+
+    return f"{FP()}{SP()}"
 
 def Hnamer():
     FP = random.choice(["Mikker","Wimmly","Jarmit", "FiFyFo", "Peeter", "Nipnoe", "Padfot", "??????"])
@@ -135,7 +225,7 @@ def Dnamer():
     return random.choice(["Scar             |","Kainto           |","Flea             |", "Botron           |", "Frot             |", "Clotenomen       |", "Fimotrin         |", "Death            |"])
 
 # Function that prints the map to the console
-def PrintM():
+def print_map():
     global a
     global b
     global MAP
@@ -143,17 +233,22 @@ def PrintM():
     c = 0
     x = 0
     i = 0
+    out = ""
     for i in range(a):
         for x in range(b):
-            print(MAP[c], end = "")
+            out += f"{MAP[c]}"
+            # print(MAP[c], end = "")
             x += 1
             c += 1
         try:
-            print(Legend[i])
+            out += f"{Legend[i]}\n"
+            # print(Legend[i])
         except:
-            print(" |                      |")
+            out += " |                      |\n"
+            # print(" |                      |")
         x = 1
         i += 1
+    return out
 
 # Function that checks if you can place a specified rectangle(Box) on a specified position(x)
 def CPlaceB(x):
@@ -199,7 +294,7 @@ def AddB():
                 return None
 
 # Function that smooths out long corners
-def Curve():
+def apply_curves_to_map():
     global MAP
     global b
     global c
@@ -268,7 +363,7 @@ def Curve():
                     pass
 
 # Function that replaces the outline of the rectangles with ascii art
-def Outline():
+def replace_outline():
     global MAP
     global b
     global LS
@@ -335,7 +430,14 @@ def Outline():
             elif Sides["D"] == 1:
                 MAP[i] = "_"
             elif Sides["L"] == 1 or Sides["R"] == 1:
-                MAP[i] = "|"
+                mark = random.randrange(0,10)
+                if mark >= 9:
+                    if (Sides["L"] == 1):
+                      MAP[i] = "}"
+                    else:
+                        MAP[i] = "{"
+                else:
+                    MAP[i] = "|"
             else:
                 pass
 
@@ -347,7 +449,7 @@ def Clear():
             MAP[i] = " "
 
 # Function that adds random stuff to the empty parts of the map
-def AddStuff():
+def add_random_features():
     global MAP
     global PIL
     global stuff
@@ -363,24 +465,24 @@ def AddStuff():
                         stuff.remove(MAP[i])
 
 # Function that creats the Legend
-def LegendC():
+def create_legend(include_compase: bool = False):
     global PIL
     global Legend
     global MAP
     global b
-    Name = Namer()
+    Name = name_map()
     Hname = Hnamer()
     Dname = Dnamer()
     Meaning = {
-    "*": "Lake             |",
-    "@": Hname,
+    "*": "Cave             |",
+    "@": "Ruins            |",
     "!": "Battle           |",
     ".": "Mountain         |",
     "+": "Mintar           |",
-    "%": "Thraf            |",
+    "%": "Forest           |",
     "&": Dname,
-    "#": "Impom            |",
-    "$": "Gold             |"
+    "#": "Swamp            |",
+    "$": "Mine             |"
     }
     Legend = {
         0: " +----------------------+",
@@ -392,26 +494,39 @@ def LegendC():
         Legend[n] = " | " + i + " = " + Meaning[i]
         n += 1
     Legend[a - 1] = " +----------------------+"
-    MAP[b + 2] = "N"
-    MAP[b*2 + 1] = "W"
-    MAP[b*2 + 2] = "+"
-    MAP[b*2 + 3] = "E"
-    MAP[b*3 + 2] = "S"
+    if include_compase:
+        MAP[b + 2] = "N"
+        MAP[b*2 + 1] = "W"
+        MAP[b*2 + 2] = "+"
+        MAP[b*2 + 3] = "E"
+        MAP[b*3 + 2] = "S"
         
 
 # Main loop
 while True:
-    print("Small(1), Medium(2), or Large(3)")
-    print("More(4)")
-    cmd = input(">")
-    Start(cmd)
+    # print("Small(1), Medium(2), or Large(3)")
+    # print("More(4)")
+    cmd = "Small(1)"
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--size", default="Large(3)")
+    parser.add_argument("--preset", default="1")
+    parser.add_argument("--populate", default="no")
+    args = parser.parse_args()
+    
+    generate_basemap(args.size, args.preset)
     for i in range(l):
         AddB()
     print("")
-    Curve()
-    Outline()
+    apply_curves_to_map()
+    replace_outline()
     Clear()
-    AddStuff()
-    LegendC()
-    PrintM()
+    if args.populate != "no":
+        add_random_features()
+    create_legend()
+    map_string = print_map()
+    print(map_string)
+    md = hashlib.md5()
+    md.update(map_string.encode())
     print("")
+    print(md.hexdigest())
+    break
